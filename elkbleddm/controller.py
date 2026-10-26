@@ -153,8 +153,10 @@ class ELKStrip:
         """Stop an onboard effect / return to a static colour."""
         await self._send(protocol.static_mode())
 
-    async def set_color(self, r: int, g: int, b: int) -> None:
-        await self._send(protocol.color(r, g, b, self.dialect))
+    async def set_color(
+        self, r: int, g: int, b: int, settle: float | None = None
+    ) -> None:
+        await self._send(protocol.color(r, g, b, self.dialect), delay=settle)
 
     async def set_color_hex(self, text: str) -> None:
         await self.set_color(*rgb_from_text(text))

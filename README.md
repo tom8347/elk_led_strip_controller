@@ -5,10 +5,10 @@ PC-side Bluetooth LE control for LED strips that advertise as
 supplies power; all control is BLE.
 
 Verified against the real strip: power, RGB colour, brightness, white
-balance, presets and the onboard microphone/music mode. Onboard effect
-commands are implemented but this firmware does not run them reliably, so
-effects are streamed from the PC instead (`elk animate ...`), which works at
-50 FPS.
+balance, presets, the onboard microphone/music mode, PC-driven animation, and
+Ambilight-style screen sync. Onboard effect commands are implemented but this
+firmware does not run them reliably, so effects are streamed from the PC
+instead (`elk animate ...`).
 
 ## Quick start
 
@@ -32,6 +32,7 @@ elk on
 elk color '#ff6600'
 elk brightness 40
 elk animate rainbow --duration 15
+elk screen --fps 60
 elk off
 ```
 
@@ -48,6 +49,7 @@ elk off
 | `elk animate rainbow\|strobe\|breathe\|cycle` | PC-driven animation |
 | `elk animate ... --duration 30 --fps 50` | animation length/rate |
 | `elk animate ... --color '#ff6600'` | base colour for `strobe`/`breathe` |
+| `elk screen [--fps 60] [--mode edge]` | sync the strip to the screen |
 | `elk stop-effect` | stop an onboard effect / return to static |
 | `elk effect NAME\|CODE` | onboard effect (unreliable on this firmware) |
 | `elk speed 0-100` | onboard effect speed (same caveat) |
@@ -74,6 +76,42 @@ Global options:
 Environment variables `ELK_ADDRESS`, `ELK_NAME` and `ELK_DIALECT` are also
 honoured.
 
+## Screen sync (ambilight)
+
+```bash
+elk screen --fps 60                 # until Ctrl+C
+elk screen --duration 60 --mode edge
+elk screen --region focused --fps 60
+```
+
+The strip is single-zone (all LEDs show the same colour), so screen sync
+reduces the screen to one RGB value:
+
+| Option | Description |
+|---|---|
+| `--mode average` | average the whole screen (default) |
+| `--mode edge` | average the outer 25% bands, TV-ambilight style |
+| `--mode dominant` | prefer saturated/bright pixels |
+| `--region full\|focused` | whole output, or focused window at startup |
+| `--fps 1-120` | capture/update rate (default 60) |
+| `--smoothing 0-1` | 0 = instant, 1 = maximum smoothing |
+| `--saturation` | colour boost (default 1.3) |
+| `--gain` | RGB scaling (default 1.0) |
+| `--min-change` | skip tiny updates (default 4) |
+| `--geometry 'x,y WxH'` | explicit capture region |
+| `--stats` | print frames, sends and FPS |
+
+Performance measured on the test machine: `wf-recorder` sustained 29 / 58 /
+117 FPS at 64×36; the BLE link accepts ~880 colour writes/s, so the strip is
+not the bottleneck. The monitor refreshes at 74.8 Hz, so 60 FPS is the
+default and 75 FPS matches the display; above ~75 FPS the extra frames are
+duplicates. At 60 FPS the update looked smooth with no significant delay.
+
+`wf-recorder` is bundled into the packaged `elk` wrapper. `--region focused`
+also needs `hyprctl` from the running Hyprland session. Protected/DRM video
+may capture as black. Use `--mode edge` if the strip is mounted around the
+monitor; `--mode average` suits a strip behind the screen.
+
 ## Troubleshooting
 
 - **Only one BLE central at a time.** Force-stop the phone app or turn off
@@ -96,6 +134,7 @@ honoured.
 elkbleddm/cli.py        argparse CLI (installed as `elk`)
 elkbleddm/protocol.py   packet builders for both dialects
 elkbleddm/controller.py async BLE connection + high-level controls
+elkbleddm/screen.py     wf-recorder screen capture + colour extraction
 elk.py                  compatibility shim for `python elk.py`
 tests/test_protocol.py  byte-exact packet tests
 protocol.md             full protocol reference and reverse-engineering notes
@@ -109,7 +148,7 @@ tests (`nix flake check`).
 
 ## Next steps
 
-- systemd user service or timer for on/off schedules (the controller already
+- systemd user service for automatic screen sync / schedules (the controller
   keeps one connection and can be imported as `elkbleddm.ELKStrip`).
 - A small local HTTP/WebSocket API or GUI on top of `ELKStrip`.
 - If onboard effects matter, capture the Lotus Lantern app's HCI log and send

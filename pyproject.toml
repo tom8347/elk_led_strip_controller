@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "elkbleddm"
-version = "0.1.0"
+version = "0.2.0"
 description = "PC-side controller for ELK-BLEDDM / ELK-BLEDOM Bluetooth LED strips"
 readme = "README.md"
 license = { text = "MIT" }

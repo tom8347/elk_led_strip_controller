@@ -12,6 +12,7 @@ import sys
 from elkbleddm import ELKStrip
 from elkbleddm import protocol
 from elkbleddm.protocol import Dialect
+from elkbleddm.screen import ScreenOptions, run_screen
 
 
 def parse_color(values: list[str]) -> tuple[int, int, int]:
@@ -77,6 +78,52 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--duration", type=float, default=10.0)
     p.add_argument("--fps", type=float, default=50.0)
     p.add_argument("--color", default="#ffffff", help="base colour for strobe/breathe")
+
+    p = sub.add_parser(
+        "screen",
+        aliases=["ambilight"],
+        help="sync the strip to the screen (ambilight)",
+    )
+    p.add_argument(
+        "--fps",
+        type=int,
+        default=60,
+        help="capture rate, 1-120; the display refresh is the real limit",
+    )
+    p.add_argument(
+        "--duration",
+        type=float,
+        default=0.0,
+        help="seconds to run; 0 = until Ctrl+C",
+    )
+    p.add_argument(
+        "--mode",
+        choices=["average", "edge", "dominant"],
+        default="average",
+        help="how to reduce the screen to one colour",
+    )
+    p.add_argument(
+        "--region",
+        choices=["full", "focused"],
+        default="full",
+        help="capture the whole screen or the focused window",
+    )
+    p.add_argument("--geometry", help='explicit region, e.g. "0,0 2560x200"')
+    p.add_argument(
+        "--smoothing",
+        type=float,
+        default=0.2,
+        help="0 = instant, 1 = maximum smoothing",
+    )
+    p.add_argument("--saturation", type=float, default=1.3)
+    p.add_argument("--gain", type=float, default=1.0)
+    p.add_argument(
+        "--min-change",
+        type=int,
+        default=4,
+        help="skip a frame if the summed RGB delta is below this",
+    )
+    p.add_argument("--stats", action="store_true")
 
     p = sub.add_parser("color", help="set RGB colour")
     p.add_argument("value", nargs="+", help="#rrggbb or R G B")
@@ -163,6 +210,26 @@ async def run(args: argparse.Namespace) -> None:
                 color=_hex(args.color),
             )
             print(f"animation {args.animation} finished")
+        elif args.cmd in ("screen", "ambilight"):
+            opts = ScreenOptions(
+                fps=args.fps,
+                duration=args.duration,
+                mode=args.mode,
+                region=args.region,
+                geometry=args.geometry,
+                smoothing=args.smoothing,
+                saturation=args.saturation,
+                gain=args.gain,
+                min_change=args.min_change,
+                stats=args.stats,
+            )
+            print(
+                f"screen sync: mode={opts.mode} fps={opts.fps} "
+                f"region={opts.geometry or opts.region} (Ctrl+C to stop)",
+                file=sys.stderr,
+            )
+            stats = await run_screen(strip, opts)
+            print(stats.summary())
         elif args.cmd == "on":
             await strip.set_power(True)
             print("on")

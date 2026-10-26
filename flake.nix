@@ -11,18 +11,26 @@
 
     elkbleddm = python.pkgs.buildPythonApplication {
       pname = "elkbleddm";
-      version = "0.1.0";
+      version = "0.2.0";
       pyproject = true;
       src = ./.;
 
       build-system = [ python.pkgs.setuptools ];
       dependencies = [ python.pkgs.bleak ];
       nativeCheckInputs = [ python.pkgs.pytest ];
+      nativeBuildInputs = [ pkgs.makeWrapper ];
 
       checkPhase = ''
         runHook preCheck
         pytest -q
         runHook postCheck
+      '';
+
+      # Screen sync shells out to wf-recorder; keep it in the app's PATH so
+      # the installed `elk` works without relying on the user's environment.
+      postFixup = ''
+        wrapProgram $out/bin/elk \
+          --prefix PATH : ${pkgs.lib.makeBinPath [ pkgs.wf-recorder pkgs.grim ]}
       '';
 
       meta = {
@@ -53,6 +61,8 @@
         python.pkgs.pytest
         pkgs.bluez
         pkgs.wireshark-cli
+        pkgs.wf-recorder
+        pkgs.grim
       ];
 
       shellHook = ''
