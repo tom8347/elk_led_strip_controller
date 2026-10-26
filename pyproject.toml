@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elkbleddm"
+version = "0.1.0"
+description = "PC-side controller for ELK-BLEDDM / ELK-BLEDOM Bluetooth LED strips"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["bleak>=0.22"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+elk = "elkbleddm.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["elkbleddm*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

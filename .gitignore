@@ -1,0 +1,9 @@
+.direnv/
+__pycache__/
+*.pyc
+.pytest_cache/
+captures/
+*.btsnoop
+*.log
+result
+result-*
