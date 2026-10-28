@@ -98,6 +98,7 @@ reduces the screen to one RGB value:
 | `--saturation` | colour boost (default 1.3) |
 | `--gain` | RGB scaling (default 1.0) |
 | `--min-change` | skip tiny updates (default 4) |
+| `--power-every N` | re-send power-on every N s, so a strip switched off at the remote comes back (default 0 = never) |
 | `--geometry 'x,y WxH'` | explicit capture region |
 | `--stats` | print frames, sends and FPS |
 

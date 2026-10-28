@@ -123,6 +123,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=4,
         help="skip a frame if the summed RGB delta is below this",
     )
+    p.add_argument(
+        "--power-every",
+        type=float,
+        default=0.0,
+        help="re-send power-on every N seconds, in case the strip was "
+        "switched off; 0 = never",
+    )
     p.add_argument("--stats", action="store_true")
 
     p = sub.add_parser("color", help="set RGB colour")
@@ -221,6 +228,7 @@ async def run(args: argparse.Namespace) -> None:
                 saturation=args.saturation,
                 gain=args.gain,
                 min_change=args.min_change,
+                power_every=args.power_every,
                 stats=args.stats,
             )
             print(

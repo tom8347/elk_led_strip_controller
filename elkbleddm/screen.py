@@ -36,6 +36,7 @@ class ScreenOptions:
     saturation: float = 1.3
     gain: float = 1.0
     min_change: int = 4
+    power_every: float = 0.0
     stats: bool = False
 
 
@@ -267,6 +268,7 @@ async def run_screen(strip: ELKStrip, opts: ScreenOptions) -> ScreenStats:
     frames = 0
     sends = 0
     last_color: tuple[int, int, int] | None = None
+    last_power = start
     stats = ScreenStats()
 
     try:
@@ -281,6 +283,17 @@ async def run_screen(strip: ELKStrip, opts: ScreenOptions) -> ScreenStats:
                     "wf-recorder stopped "
                     f"(exit {capture.exit_code}); run with -v for details"
                 )
+
+            # Colour writes don't power the strip on, so if it was switched
+            # off (remote, app, power cut) it would stay dark; re-send power-on
+            # now and then, and the current colour straight after it
+            if opts.power_every > 0 and loop.time() - last_power >= opts.power_every:
+                last_power = loop.time()
+                try:
+                    await strip.set_power(True)
+                    last_color = None
+                except Exception as exc:  # noqa: BLE001 - keep the loop alive
+                    log.warning("LED power-on failed: %s", exc)
 
             raw = extract_color(frame, opts.mode)
             rgb = adjust_color(raw, opts.saturation, opts.gain)
